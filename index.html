@@ -1,1 +1,116 @@
-hello family
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buyback Portal</title>
+
+  <!-- Web3Modal + WalletConnect -->
+  <script src="https://unpkg.com/web3modal"></script>
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .box {
+      max-width: 380px;
+      margin: auto;
+      padding: 25px;
+      background: #1e1e1e;
+      border-radius: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 15px;
+      background: #00c26e;
+      color: #000;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Buyback Portal</h2>
+
+  <div class="box">
+    <button id="connectBtn">Connect Wallet</button>
+
+    <input id="amountInput" placeholder="Amount of tokens to sell" />
+
+    <button id="sellBtn">Sell Tokens</button>
+
+    <p id="status" style="margin-top:15px; color:#00d47f;"></p>
+  </div>
+
+  <script>
+    let provider;
+    let signer;
+    let connectedWallet;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const sellBtn = document.getElementById("sellBtn");
+    const statusBox = document.getElementById("status");
+
+    // ----------------------------
+    // CONNECT WALLET
+    // ----------------------------
+    connectBtn.addEventListener("click", async () => {
+      try {
+        const web3Modal = new window.Web3Modal.default({
+          cacheProvider: false,
+          providerOptions: {}
+        });
+
+        const instance = await web3Modal.connect();
+        provider = new ethers.providers.Web3Provider(instance);
+        signer = provider.getSigner();
+        connectedWallet = await signer.getAddress();
+
+        connectBtn.innerText = "Connected";
+        statusBox.innerText = "Wallet connected: " + connectedWallet.slice(0, 6) + "...";
+      } catch (err) {
+        console.error(err);
+        statusBox.innerText = "Connection failed.";
+      }
+    });
+
+    // ----------------------------
+    // SELL BUTTON (no contract yet)
+    // ----------------------------
+    sellBtn.addEventListener("click", () => {
+      const amount = document.getElementById("amountInput").value;
+      if (!connectedWallet) {
+        statusBox.innerText = "Connect wallet first.";
+        return;
+      }
+      if (!amount) {
+        statusBox.innerText = "Enter amount.";
+        return;
+      }
+
+      statusBox.innerText = "Sell pressed (contract hook will be added later)";
+    });
+  </script>
+</body>
+</html>
