@@ -5,38 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Buyback Portal</title>
 
-  <!-- Web3Modal + WalletConnect -->
-  <script src="https://unpkg.com/web3modal"></script>
   <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <style>
     body {
       margin: 0;
-      background: #111;
+      background: #050505;
       color: #fff;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 30px;
+      padding: 30px 15px;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      font-size: 26px;
     }
 
     .box {
       max-width: 380px;
       margin: auto;
-      padding: 25px;
-      background: #1e1e1e;
-      border-radius: 15px;
+      padding: 25px 20px 30px;
+      background: #121212;
+      border-radius: 18px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.45);
     }
 
     button {
       width: 100%;
       padding: 14px;
-      font-size: 18px;
+      font-size: 17px;
       border-radius: 10px;
       border: none;
       margin-top: 15px;
       background: #00c26e;
       color: #000;
       font-weight: bold;
+    }
+
+    button:disabled {
+      opacity: 0.6;
     }
 
     input {
@@ -46,6 +54,28 @@
       border-radius: 8px;
       border: none;
       font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
+    .status.error {
+      color: #ff6b6b;
+    }
+
+    .status.ok {
+      color: #00d47f;
+    }
+
+    small {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #aaa;
     }
   </style>
 </head>
@@ -56,60 +86,115 @@
   <div class="box">
     <button id="connectBtn">Connect Wallet</button>
 
-    <input id="amountInput" placeholder="Amount of tokens to sell" />
+    <input id="amountInput" placeholder="Amount of tokens to sell" inputmode="decimal" />
+
+    <small>Token buyback price: 0.0001 USDT per token (contract controlled).</small>
 
     <button id="sellBtn">Sell Tokens</button>
 
-    <p id="status" style="margin-top:15px; color:#00d47f;"></p>
+    <p id="status" class="status"></p>
   </div>
 
   <script>
+    // CONFIG
+    const TOKEN_ADDRESS   = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
+    const BUYBACK_ADDRESS = "0x77517C4323B171276aFf613a90665F6D8A02684C";
+    const TOKEN_DECIMALS  = 18;
+
+    const tokenAbi = [
+      "function approve(address spender, uint256 amount) external returns (bool)",
+      "function allowance(address owner, address spender) external view returns (uint256)"
+    ];
+
+    const buybackAbi = [
+      "function sellTokens(uint256 amount) external"
+    ];
+
     let provider;
     let signer;
     let connectedWallet;
+    let tokenContract;
+    let buybackContract;
 
-    const connectBtn = document.getElementById("connectBtn");
-    const sellBtn = document.getElementById("sellBtn");
-    const statusBox = document.getElementById("status");
+    const connectBtn  = document.getElementById("connectBtn");
+    const sellBtn     = document.getElementById("sellBtn");
+    const statusBox   = document.getElementById("status");
+    const amountInput = document.getElementById("amountInput");
 
-    // ----------------------------
+    function setStatus(msg, isError = false) {
+      statusBox.innerText = msg;
+      statusBox.classList.remove("error", "ok");
+      if (!msg) return;
+      statusBox.classList.add(isError ? "error" : "ok");
+    }
+
     // CONNECT WALLET
-    // ----------------------------
     connectBtn.addEventListener("click", async () => {
       try {
-        const web3Modal = new window.Web3Modal.default({
-          cacheProvider: false,
-          providerOptions: {}
-        });
+        if (!window.ethereum) {
+          setStatus("No wallet detected (MetaMask / Web3 wallet).", true);
+          return;
+        }
 
-        const instance = await web3Modal.connect();
-        provider = new ethers.providers.Web3Provider(instance);
-        signer = provider.getSigner();
+        setStatus("Connecting wallet...");
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer   = provider.getSigner();
         connectedWallet = await signer.getAddress();
 
+        tokenContract   = new ethers.Contract(TOKEN_ADDRESS, tokenAbi, signer);
+        buybackContract = new ethers.Contract(BUYBACK_ADDRESS, buybackAbi, signer);
+
         connectBtn.innerText = "Connected";
-        statusBox.innerText = "Wallet connected: " + connectedWallet.slice(0, 6) + "...";
+        connectBtn.disabled  = true;
+
+        const shortAddr = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4);
+        setStatus("Wallet connected: " + shortAddr, false);
       } catch (err) {
         console.error(err);
-        statusBox.innerText = "Connection failed.";
+        setStatus("Connection failed.", true);
       }
     });
 
-    // ----------------------------
-    // SELL BUTTON (no contract yet)
-    // ----------------------------
-    sellBtn.addEventListener("click", () => {
-      const amount = document.getElementById("amountInput").value;
-      if (!connectedWallet) {
-        statusBox.innerText = "Connect wallet first.";
-        return;
-      }
-      if (!amount) {
-        statusBox.innerText = "Enter amount.";
-        return;
-      }
+    // SELL TOKENS
+    sellBtn.addEventListener("click", async () => {
+      try {
+        if (!signer || !connectedWallet) {
+          setStatus("Connect wallet first.", true);
+          return;
+        }
 
-      statusBox.innerText = "Sell pressed (contract hook will be added later)";
+        const amountStr = amountInput.value.trim();
+        if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
+          setStatus("Enter a valid token amount.", true);
+          return;
+        }
+
+        const amountWei = ethers.utils.parseUnits(amountStr, TOKEN_DECIMALS);
+
+        setStatus("Checking allowance...");
+        const allowance = await tokenContract.allowance(connectedWallet, BUYBACK_ADDRESS);
+
+        if (allowance.lt(amountWei)) {
+          setStatus("Approving tokens...");
+          const approveTx = await tokenContract.approve(BUYBACK_ADDRESS, amountWei);
+          await approveTx.wait();
+        }
+
+        setStatus("Sending sell transaction...");
+        const tx = await buybackContract.sellTokens(amountWei);
+        await tx.wait();
+
+        setStatus("Sell completed successfully ✅", false);
+      } catch (err) {
+        console.error(err);
+        if (err && err.message && err.message.includes("user rejected")) {
+          setStatus("Transaction rejected by user.", true);
+        } else {
+          setStatus("Transaction failed.", true);
+        }
+      }
     });
   </script>
 </body>
