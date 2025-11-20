@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POT Buyback Portal</title>
 
-  <!-- Ethers.js for interacting with MetaMask -->
   <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <style>
@@ -16,8 +15,8 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #020617, #0b1120, #111827);
-      color: #fff;
+      background: linear-gradient(140deg, #020617, #0b1120, #111827);
+      color: #ffffff;
       font-family: Arial, sans-serif;
       display: flex;
       align-items: center;
@@ -28,31 +27,31 @@
     .card {
       width: 100%;
       max-width: 400px;
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(15, 23, 42, 0.92);
       border-radius: 20px;
       padding: 24px 18px 28px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
       text-align: center;
+      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.55);
       border: 1px solid rgba(148, 163, 184, 0.25);
     }
 
     .logo {
       width: 140px;
-      border-radius: 22px;
+      border-radius: 20px;
       display: block;
-      margin: 0 auto 12px;
+      margin: 0 auto 15px;
     }
 
     .title {
       font-size: 22px;
       font-weight: 700;
-      margin: 4px 0 2px;
+      margin-top: 6px;
     }
 
     .subtitle {
       font-size: 13px;
-      opacity: 0.8;
-      margin-bottom: 18px;
+      color: #9ca3af;
+      margin-bottom: 16px;
     }
 
     .btn {
@@ -63,26 +62,25 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+      transition: all 0.12s ease;
     }
 
     .btn-primary {
       background: #22c55e;
-      color: #022c22;
+      color: #062a16;
       box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
       margin-bottom: 12px;
     }
 
     .btn-primary:active {
       transform: translateY(1px);
-      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.35);
     }
 
     .btn-secondary {
       background: #0f172a;
-      color: #e5e7eb;
+      color: #ffffff;
       border: 1px solid #22c55e;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
     .btn:disabled {
@@ -92,10 +90,10 @@
     }
 
     .field {
-      margin: 10px 0 4px;
-      text-align: left;
       font-size: 13px;
-      opacity: 0.85;
+      text-align: left;
+      margin-top: 8px;
+      color: #d1d5db;
     }
 
     .input {
@@ -104,7 +102,8 @@
       border-radius: 12px;
       border: 1px solid #1e293b;
       background: #020617;
-      color: #e5e7eb;
+      color: #ffffff;
+      margin-top: 5px;
       font-size: 15px;
       outline: none;
     }
@@ -115,14 +114,21 @@
     }
 
     .hint {
-      margin-top: 6px;
       font-size: 12px;
-      color: #9ca3af;
+      text-align: left;
+      margin-top: 5px;
+      color: #94a3b8;
+    }
+
+    #livePrice {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #4ade80;
       text-align: left;
     }
 
     .status {
-      margin-top: 16px;
+      margin-top: 18px;
       min-height: 20px;
       font-size: 13px;
     }
@@ -136,122 +142,129 @@
     }
 
     .footer {
-      margin-top: 12px;
+      margin-top: 14px;
       font-size: 11px;
-      color: #6b7280;
+      color: #64748b;
     }
   </style>
 </head>
 
 <body>
   <div class="card">
-    <!-- Logo -->
+
     <img
+      class="logo"
       src="https://raw.githubusercontent.com/pandafamily2025/BayBack.page/refs/heads/main/Screenshot_20251120_104806_Telegram.jpg"
       alt="POT Logo"
-      class="logo"
     />
 
     <div class="title">POT Buyback Portal</div>
-    <div class="subtitle">Sell your POT directly for USDT on BSC</div>
+    <div class="subtitle">Sell POT instantly for USDT (BSC)</div>
 
     <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
 
     <div class="field">Amount of POT to sell</div>
-    <input
-      id="amountInput"
-      class="input"
-      placeholder="e.g. 12345"
-      inputmode="decimal"
-    />
+    <input id="amountInput" class="input" placeholder="e.g. 10000" inputmode="decimal" />
 
-    <div class="hint">
-      Current buyback uses the on-chain rate set by the owner.
-    </div>
+    <div class="hint">Payout is calculated using the on-chain buyback price.</div>
+
+    <div id="livePrice">Loading on-chain price...</div>
 
     <button id="sellBtn" class="btn btn-secondary" disabled>Sell POT</button>
 
     <div id="status" class="status"></div>
 
-    <div class="footer">
-      Network: BNB Smart Chain (BSC) – MetaMask
-    </div>
+    <div class="footer">Network: BNB Smart Chain (MetaMask)</div>
+
   </div>
 
   <script>
-    // Addresses
-    const TOKEN_ADDRESS   = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
+    const TOKEN_ADDRESS = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
     const BUYBACK_ADDRESS = "0x77517C4323B171276aFf613a90665F6D8A02684C";
     const DECIMALS = 18;
 
     let provider, signer, wallet;
 
     const connectBtn = document.getElementById("connectBtn");
-    const sellBtn    = document.getElementById("sellBtn");
-    const statusBox  = document.getElementById("status");
-    const amountBox  = document.getElementById("amountInput");
+    const sellBtn = document.getElementById("sellBtn");
+    const statusBox = document.getElementById("status");
+    const amountBox = document.getElementById("amountInput");
+    const priceBox = document.getElementById("livePrice");
 
-    function setStatus(text, type) {
+    function setStatus(msg, type) {
       statusBox.className = "status";
-      if (type === "ok")  statusBox.classList.add("ok");
+      if (type === "ok") statusBox.classList.add("ok");
       if (type === "err") statusBox.classList.add("err");
-      statusBox.textContent = text;
+      statusBox.textContent = msg;
     }
 
-    // Connect wallet
+    // Load on-chain price
+    async function loadPrice() {
+      if (!provider) return;
+
+      try {
+        const buyback = new ethers.Contract(
+          BUYBACK_ADDRESS,
+          ["function price() view returns (uint256)"],
+          provider
+        );
+
+        const raw = await buyback.price();
+        const real = Number(ethers.utils.formatUnits(raw, 18));
+        priceBox.textContent = "Current POT Price: " + real + " USDT";
+      } catch (e) {
+        priceBox.textContent = "Price unavailable";
+      }
+    }
+
+    setInterval(loadPrice, 5000);
+
     connectBtn.onclick = async () => {
       if (!window.ethereum) {
-        setStatus("No wallet detected. Open this page inside MetaMask.", "err");
+        setStatus("MetaMask wallet not detected.", "err");
         return;
       }
 
       try {
         await window.ethereum.request({ method: "eth_requestAccounts" });
         provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer   = provider.getSigner();
-        wallet   = await signer.getAddress();
+        signer = provider.getSigner();
+        wallet = await signer.getAddress();
 
-        const short = wallet.slice(0, 6) + "..." + wallet.slice(-4);
-        connectBtn.textContent = "Connected: " + short;
+        connectBtn.textContent = "Connected";
         connectBtn.disabled = true;
         sellBtn.disabled = false;
 
-        setStatus("Wallet connected: " + short, "ok");
+        setStatus("Wallet connected: " + wallet.slice(0, 6) + "..." + wallet.slice(-4), "ok");
+        loadPrice();
       } catch (err) {
-        console.error(err);
-        setStatus("Connection rejected or failed.", "err");
+        setStatus("Connection failed or rejected.", "err");
       }
     };
 
-    // Sell POT
     sellBtn.onclick = async () => {
-      if (!wallet) {
-        setStatus("Connect wallet first.", "err");
-        return;
-      }
+      if (!wallet) return setStatus("Connect wallet first.", "err");
 
       const amountStr = amountBox.value.trim();
       if (!amountStr || Number(amountStr) <= 0) {
-        setStatus("Enter a valid POT amount.", "err");
-        return;
+        return setStatus("Enter valid POT amount.", "err");
       }
 
       let amountWei;
       try {
         amountWei = ethers.utils.parseUnits(amountStr, DECIMALS);
       } catch (e) {
-        setStatus("Invalid number format.", "err");
-        return;
+        return setStatus("Invalid number format.", "err");
       }
 
       try {
-        setStatus("Checking allowance…");
+        setStatus("Checking allowance...");
 
         const token = new ethers.Contract(
           TOKEN_ADDRESS,
           [
-            "function approve(address,uint256) external returns (bool)",
-            "function allowance(address,address) external view returns (uint256)"
+            "function approve(address,uint256) external returns(bool)",
+            "function allowance(address,address) external view returns(uint256)"
           ],
           signer
         );
@@ -259,30 +272,28 @@
         const allowance = await token.allowance(wallet, BUYBACK_ADDRESS);
 
         if (allowance.lt(amountWei)) {
-          setStatus("Approving POT for buyback…");
+          setStatus("Approving POT...");
           const tx1 = await token.approve(BUYBACK_ADDRESS, amountWei);
           await tx1.wait();
         }
 
-        setStatus("Sending sell transaction…");
+        setStatus("Sending sell transaction...");
 
         const buyback = new ethers.Contract(
           BUYBACK_ADDRESS,
-          ["function sellTokens(uint256 amount) external"],
+          ["function sellTokens(uint256) external"],
           signer
         );
 
         const tx2 = await buyback.sellTokens(amountWei);
         await tx2.wait();
 
-        setStatus("Sell completed ✔ POT swapped for USDT.", "ok");
+        setStatus("Sell completed ✔ Received USDT.", "ok");
       } catch (err) {
-        console.error(err);
-        if (err && err.message && err.message.includes("user rejected")) {
-          setStatus("Transaction rejected by user.", "err");
-        } else {
-          setStatus("Transaction failed. Check gas/network and try again.", "err");
+        if (err.message.includes("user rejected")) {
+          return setStatus("Transaction rejected.", "err");
         }
+        setStatus("Transaction failed. Check balance or network.", "err");
       }
     };
   </script>
