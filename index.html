@@ -2,300 +2,523 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>POT Buyback Portal – Playtopia Organization Token</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>POT Buyback Portal</title>
 
-  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- ethers.js v5 -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <!-- WalletConnect v1 -->
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --accent: #18c57a;
+      --accent-soft: rgba(24, 197, 122, 0.15);
+      --bg1: #050816;
+      --bg2: #111827;
+      --text-muted: #9ca3af;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+      "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0%, #020617 55%, #000 100%);
+      color: #f9fafb;
       min-height: 100vh;
-      background: linear-gradient(140deg, #020617, #0b1120, #111827);
-      color: #ffffff;
-      font-family: Arial, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px 12px;
+      padding: 16px;
+    }
+
+    .wrapper {
+      width: 100%;
+      max-width: 420px;
     }
 
     .card {
-      width: 100%;
-      max-width: 400px;
-      background: rgba(15, 23, 42, 0.92);
-      border-radius: 20px;
-      padding: 24px 18px 28px;
-      text-align: center;
-      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: linear-gradient(145deg, rgba(15,23,42,0.92), rgba(15,23,42,0.98));
+      border-radius: 24px;
+      padding: 20px 18px 22px;
+      box-shadow:
+        0 18px 45px rgba(0,0,0,0.65),
+        0 0 0 1px rgba(148,163,184,0.1);
+      border: 1px solid rgba(148,163,184,0.2);
+      position: relative;
+      overflow: hidden;
     }
 
-    .logo {
-      width: 140px;
+    .card::before {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(56,189,248,0.25), transparent 70%);
+      top: -60px;
+      right: -80px;
+      opacity: 0.65;
+      pointer-events: none;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-box {
+      width: 64px;
+      height: 64px;
       border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: #020617;
+    }
+
+    .logo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       display: block;
-      margin: 0 auto 15px;
     }
 
-    .title {
-      font-size: 22px;
+    .head-text-main {
+      font-size: 20px;
       font-weight: 700;
-      margin-top: 6px;
+      letter-spacing: 0.03em;
     }
 
-    .subtitle {
+    .head-text-sub {
       font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 16px;
+      color: var(--text-muted);
     }
 
-    .btn {
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(148,163,184,0.4);
+      color: #e5e7eb;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(34,197,94,0.9);
+    }
+
+    .section {
+      background: rgba(15,23,42,0.9);
+      border-radius: 18px;
+      padding: 12px 12px 14px;
+      border: 1px solid rgba(55,65,81,0.8);
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-title {
+      font-size: 13px;
+      color: #e5e7eb;
+      margin-bottom: 6px;
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .connect-btn {
       width: 100%;
-      padding: 13px;
+      margin-top: 8px;
+      padding: 12px 14px;
       border-radius: 999px;
       border: none;
-      font-size: 15px;
+      outline: none;
       font-weight: 600;
+      font-size: 15px;
       cursor: pointer;
-      transition: all 0.12s ease;
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      color: #022c22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow:
+        0 10px 25px rgba(34,197,94,0.4),
+        0 0 0 1px rgba(22,163,74,0.4);
     }
 
-    .btn-primary {
-      background: #22c55e;
-      color: #062a16;
-      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
-      margin-bottom: 12px;
-    }
-
-    .btn-primary:active {
-      transform: translateY(1px);
-    }
-
-    .btn-secondary {
-      background: #0f172a;
-      color: #ffffff;
-      border: 1px solid #22c55e;
-      margin-top: 10px;
-    }
-
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      box-shadow: none;
+    .connect-btn.connected {
+      background: rgba(15,118,110,0.9);
+      box-shadow:
+        0 8px 20px rgba(15,118,110,0.5),
+        0 0 0 1px rgba(45,212,191,0.5);
+      color: #a5f3fc;
     }
 
     .field {
-      font-size: 13px;
-      text-align: left;
-      margin-top: 8px;
-      color: #d1d5db;
+      margin-top: 12px;
     }
 
-    .input {
+    .field-label {
+      font-size: 13px;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-label small {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input[type="number"] {
       width: 100%;
-      padding: 11px 12px;
-      border-radius: 12px;
-      border: 1px solid #1e293b;
-      background: #020617;
-      color: #ffffff;
-      margin-top: 5px;
+      padding: 12px 80px 12px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(75,85,99,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.85), rgba(15,23,42,1));
+      color: #f9fafb;
       font-size: 15px;
       outline: none;
     }
 
-    .input:focus {
-      border-color: #22c55e;
-      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
-    }
-
-    .hint {
+    .input-suffix {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
       font-size: 12px;
-      text-align: left;
-      margin-top: 5px;
-      color: #94a3b8;
+      background: rgba(15,23,42,0.95);
+      border-radius: 999px;
+      padding: 4px 9px;
+      border: 1px solid rgba(55,65,81,0.9);
+      color: #e5e7eb;
     }
 
-    #livePrice {
-      margin-top: 12px;
-      font-size: 13px;
-      color: #4ade80;
-      text-align: left;
+    .pill-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sell-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(34,197,94,0.9);
+      background: radial-gradient(circle at top left, var(--accent-soft), rgba(15,23,42,1));
+      color: #bbf7d0;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow:
+        0 10px 25px rgba(22,163,74,0.45),
+        0 0 0 1px rgba(21,128,61,0.4);
+    }
+
+    .sell-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
     }
 
     .status {
-      margin-top: 18px;
-      min-height: 20px;
-      font-size: 13px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      min-height: 16px;
     }
 
-    .status.ok {
-      color: #4ade80;
-    }
+    .error { color: #fca5a5; }
+    .success { color: #bbf7d0; }
 
-    .status.err {
-      color: #f87171;
-    }
-
-    .footer {
-      margin-top: 14px;
-      font-size: 11px;
-      color: #64748b;
-    }
   </style>
 </head>
 
 <body>
+<div class="wrapper">
   <div class="card">
 
-    <img
-      class="logo"
-      src="https://raw.githubusercontent.com/pandafamily2025/BayBack.page/refs/heads/main/Screenshot_20251120_104806_Telegram.jpg"
-      alt="POT Logo"
-    />
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo-box">
+        <img src="https://raw.githubusercontent.com/pandafamily2025/BayBack.page/refs/heads/main/Screenshot_20251120_104806_Telegram.jpg" alt="Panda Logo">
+      </div>
 
-    <div class="title">POT Buyback Portal</div>
-    <div class="subtitle">Sell POT instantly for USDT (BSC)</div>
+      <div>
+        <div class="head-text-main">POT Buyback Portal</div>
+        <div class="head-text-sub">Sell POT directly for USDT on BSC</div>
+        <div class="head-text-sub" style="font-size:12px; margin-top:3px;">
+          Playtopia Organization Token (POT)
+        </div>
+      </div>
+    </div>
 
-    <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+    <!-- WALLET + NETWORK STATUS -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;position:relative;z-index:1;">
+      <div class="pill">
+        <span class="pill-dot"></span>
+        <span id="walletStatus">Not connected</span>
+      </div>
+      <div class="pill" style="opacity:0.9;">
+        <span>Network:</span>
+        <span id="networkText">–</span>
+      </div>
+    </div>
 
-    <div class="field">Amount of POT to sell</div>
-    <input id="amountInput" class="input" placeholder="e.g. 10000" inputmode="decimal" />
+    <!-- WALLET SECTION -->
+    <div class="section">
+      <div class="section-title">
+        Wallet
+      </div>
+      <div class="section-sub" id="walletAddress">
+        Connect to see your POT balance.
+      </div>
 
-    <div class="hint">Payout is calculated using the on-chain buyback price.</div>
+      <button id="connectBtn" class="connect-btn" onclick="connectWallet()">
+        <span class="dot"></span>
+        <span>Connect Wallet</span>
+      </button>
+    </div>
 
-    <div id="livePrice">Loading on-chain price...</div>
+    <!-- SELL SECTION -->
+    <div class="section">
+      <div class="field">
+        <div class="field-label">
+          <span>Amount to sell</span>
+          <small id="balanceText">Balance: – POT</small>
+        </div>
 
-    <button id="sellBtn" class="btn btn-secondary" disabled>Sell POT</button>
+        <div class="input-wrap">
+          <input id="amountInput" type="number" placeholder="0.0">
+          <div class="input-suffix">POT</div>
+        </div>
+      </div>
 
-    <div id="status" class="status"></div>
+      <div class="pill-row">
+        <span>Buyback Price:</span>
+        <span id="priceText">–</span>
+      </div>
 
-    <div class="footer">Network: BNB Smart Chain (MetaMask)</div>
+      <div class="pill-row">
+        <span>Estimated Receive:</span>
+        <span id="estimateText">– USDT</span>
+      </div>
+
+      <button id="sellBtn" class="sell-btn" onclick="sellTokens()" disabled>
+        Sell POT for USDT
+      </button>
+
+      <div id="status" class="status"></div>
+    </div>
 
   </div>
+</div>
 
-  <script>
-    const TOKEN_ADDRESS = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
-    const BUYBACK_ADDRESS = "0x77517C4323B171276aFf613a90665F6D8A02684C";
-    const DECIMALS = 18;
+<script>
+  const BUYBACK_ADDRESS = "0x9652CC7355C759DB295E8bd5A21d4D707FC07085";
+  const POT_ADDRESS     = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
+  const USDT_ADDRESS    = "0x55d398326f99059fF775485246999027B3197955";
+  const BSC_CHAIN_ID    = 56;
 
-    let provider, signer, wallet;
+  const BUYBACK_ABI = [
+    {"inputs":[{"internalType":"address","name":"_token","type":"address"},{"internalType":"address","name":"_usdt","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+    {"inputs":[{"internalType":"uint256","name":"newPrice","type":"uint256"}],"name":"setPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sellTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"price","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"token","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"usdt","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutility":"view","type":"function"}
+  ];
 
-    const connectBtn = document.getElementById("connectBtn");
-    const sellBtn = document.getElementById("sellBtn");
-    const statusBox = document.getElementById("status");
-    const amountBox = document.getElementById("amountInput");
-    const priceBox = document.getElementById("livePrice");
+  const ERC20_ABI = [
+    {"constant":true,"inputs":[{"name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+    {"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+    {"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"},
+    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+    {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"}
+  ];
 
-    function setStatus(msg, type) {
-      statusBox.className = "status";
-      if (type === "ok") statusBox.classList.add("ok");
-      if (type === "err") statusBox.classList.add("err");
-      statusBox.textContent = msg;
-    }
+  let provider = null;
+  let signer = null;
+  let buyback = null;
+  let pot = null;
+  let currentAccount = null;
+  let walletConnectProvider = null;
 
-    // Load on-chain price
-    async function loadPrice() {
-      if (!provider) return;
+  const statusEl     = document.getElementById("status");
+  const connectBtn   = document.getElementById("connectBtn");
+  const walletStatus = document.getElementById("walletStatus");
+  const walletAddrEl = document.getElementById("walletAddress");
+  const networkText  = document.getElementById("networkText");
+  const balanceText  = document.getElementById("balanceText");
+  const priceText    = document.getElementById("priceText");
+  const estimateText = document.getElementById("estimateText");
+  const sellBtn      = document.getElementById("sellBtn");
+  const amountInput  = document.getElementById("amountInput");
 
-      try {
-        const buyback = new ethers.Contract(
-          BUYBACK_ADDRESS,
-          ["function price() view returns (uint256)"],
-          provider
-        );
+  amountInput.addEventListener("input", updateEstimate);
 
-        const raw = await buyback.price();
-        const real = Number(ethers.utils.formatUnits(raw, 18));
-        priceBox.textContent = "Current POT Price: " + real + " USDT";
-      } catch (e) {
-        priceBox.textContent = "Price unavailable";
+  function short(addr) {
+    return addr.slice(0, 6) + "..." + addr.slice(-4);
+  }
+
+  function setStatus(msg, type="") {
+    statusEl.textContent = msg;
+    statusEl.className = "status" + (type ? " " + type : "");
+  }
+
+  async function connectWallet() {
+    try {
+      setStatus("Connecting wallet...");
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+      } else {
+        walletConnectProvider = new WalletConnectProvider.default({
+          rpc: { 56: "https://bsc-dataseed.binance.org/" },
+          chainId: 56
+        });
+        await walletConnectProvider.enable();
+        provider = new ethers.providers.Web3Provider(walletConnectProvider);
+        signer = provider.getSigner();
       }
+
+      const net = await provider.getNetwork();
+      networkText.textContent = net.chainId === 56 ? "BSC" : net.chainId;
+
+      currentAccount = await signer.getAddress();
+      walletStatus.textContent = "Connected";
+      walletAddrEl.textContent = short(currentAccount);
+      connectBtn.classList.add("connected");
+      connectBtn.innerHTML = `<span class="dot"></span>Wallet Connected`;
+
+      buyback = new ethers.Contract(BUYBACK_ADDRESS, BUYBACK_ABI, signer);
+      pot     = new ethers.Contract(POT_ADDRESS, ERC20_ABI, signer);
+
+      sellBtn.disabled = false;
+
+      await loadPrice();
+      await loadBalance();
+      setInterval(loadPrice, 10000);
+
+      setStatus("");
+    } catch (err) {
+      console.error(err);
+      setStatus(err.message || "Failed to connect", "error");
     }
+  }
 
-    setInterval(loadPrice, 5000);
+  async function loadPrice() {
+    if (!buyback) return;
+    try {
+      const p = await buyback.price();
+      const pNum = Number(ethers.utils.formatUnits(p, 18));
+      priceText.textContent = pNum + " USDT";
+      updateEstimate();
+    } catch (err) {
+      priceText.textContent = "–";
+    }
+  }
 
-    connectBtn.onclick = async () => {
-      if (!window.ethereum) {
-        setStatus("MetaMask wallet not detected.", "err");
+  async function loadBalance() {
+    if (!pot || !currentAccount) return;
+    try {
+      const bal = await pot.balanceOf(currentAccount);
+      const qty = Number(ethers.utils.formatUnits(bal, 18));
+      balanceText.textContent = "Balance: " + qty.toFixed(4) + " POT";
+    } catch (err) {
+      balanceText.textContent = "Balance: – POT";
+    }
+  }
+
+  async function updateEstimate() {
+    try {
+      const val = amountInput.value;
+      if (!val || Number(val) <= 0) {
+        estimateText.textContent = "– USDT";
         return;
       }
+      const amountWei = ethers.utils.parseUnits(val, 18);
+      const price = await buyback.price();
+      const payout = amountWei.mul(price).div(ethers.BigNumber.from("1000000000000000000"));
+      const amount = Number(ethers.utils.formatUnits(payout, 18));
+      estimateText.textContent = amount + " USDT";
+    } catch {}
+  }
 
-      try {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-        wallet = await signer.getAddress();
+  async function sellTokens() {
+    if (!buyback || !pot) {
+      setStatus("Wallet not connected", "error");
+      return;
+    }
+    const val = amountInput.value;
+    if (!val || Number(val) <= 0) {
+      setStatus("Enter a valid amount", "error");
+      return;
+    }
 
-        connectBtn.textContent = "Connected";
-        connectBtn.disabled = true;
-        sellBtn.disabled = false;
+    try {
+      sellBtn.disabled = true;
+      setStatus("Preparing...");
 
-        setStatus("Wallet connected: " + wallet.slice(0, 6) + "..." + wallet.slice(-4), "ok");
-        loadPrice();
-      } catch (err) {
-        setStatus("Connection failed or rejected.", "err");
+      const amountWei = ethers.utils.parseUnits(val, 18);
+      const allowance = await pot.allowance(currentAccount, BUYBACK_ADDRESS);
+
+      if (allowance.lt(amountWei)) {
+        setStatus("Approving POT...", "success");
+        const tx = await pot.approve(BUYBACK_ADDRESS, amountWei);
+        await tx.wait();
       }
-    };
 
-    sellBtn.onclick = async () => {
-      if (!wallet) return setStatus("Connect wallet first.", "err");
+      setStatus("Selling POT...");
+      const tx2 = await buyback.sellTokens(amountWei);
+      await tx2.wait();
 
-      const amountStr = amountBox.value.trim();
-      if (!amountStr || Number(amountStr) <= 0) {
-        return setStatus("Enter valid POT amount.", "err");
-      }
+      setStatus("Sold successfully!", "success");
+      await loadBalance();
+      updateEstimate();
+      sellBtn.disabled = false;
 
-      let amountWei;
-      try {
-        amountWei = ethers.utils.parseUnits(amountStr, DECIMALS);
-      } catch (e) {
-        return setStatus("Invalid number format.", "err");
-      }
+    } catch (err) {
+      console.error(err);
+      setStatus(err.message || "Transaction failed", "error");
+      sellBtn.disabled = false;
+    }
+  }
+</script>
 
-      try {
-        setStatus("Checking allowance...");
-
-        const token = new ethers.Contract(
-          TOKEN_ADDRESS,
-          [
-            "function approve(address,uint256) external returns(bool)",
-            "function allowance(address,address) external view returns(uint256)"
-          ],
-          signer
-        );
-
-        const allowance = await token.allowance(wallet, BUYBACK_ADDRESS);
-
-        if (allowance.lt(amountWei)) {
-          setStatus("Approving POT...");
-          const tx1 = await token.approve(BUYBACK_ADDRESS, amountWei);
-          await tx1.wait();
-        }
-
-        setStatus("Sending sell transaction...");
-
-        const buyback = new ethers.Contract(
-          BUYBACK_ADDRESS,
-          ["function sellTokens(uint256) external"],
-          signer
-        );
-
-        const tx2 = await buyback.sellTokens(amountWei);
-        await tx2.wait();
-
-        setStatus("Sell completed ✔ Received USDT.", "ok");
-      } catch (err) {
-        if (err.message.includes("user rejected")) {
-          return setStatus("Transaction rejected.", "err");
-        }
-        setStatus("Transaction failed. Check balance or network.", "err");
-      }
-    };
-  </script>
 </body>
 </html>
