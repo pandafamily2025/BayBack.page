@@ -1,193 +1,766 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POT Buyback Portal</title>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>POT Buyback Portal</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <!-- Ethers + Web3Modal + WalletConnect -->
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
-<style>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-        margin: 0;
-        min-height: 100vh;
-        background: linear-gradient(135deg, #030b17, #0b1120, #111827);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        color: white;
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2933 0, #020617 55%, #020617 100%);
+      color: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
     }
 
     .card {
-        width: 90%;
-        max-width: 450px;
-        background: rgba(15, 23, 42, 0.95);
-        padding: 30px;
-        border-radius: 20px;
-        text-align: center;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 430px;
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+      padding: 24px 22px 26px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
     }
 
-    img {
-        width: 120px;
-        border-radius: 20px;
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
-    input {
-        width: 100%;
-        padding: 12px;
-        border-radius: 10px;
-        border: none;
-        margin-top: 10px;
-        font-size: 16px;
+    .logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      flex-shrink: 0;
+      background: #020617;
     }
 
-    button {
-        width: 100%;
-        padding: 14px;
-        margin-top: 18px;
-        background: #16a34a;
-        border: none;
-        color: white;
-        font-size: 18px;
-        border-radius: 12px;
-        cursor: pointer;
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    button:disabled {
-        background: #555;
-        cursor: not-allowed;
+    .title-block h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      font-weight: 700;
     }
 
-    .info {
-        margin-top: 8px;
-        font-size: 14px;
-        opacity: 0.8;
+    .title-block .subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 2px;
     }
-</style>
+
+    .title-block .sub-tagline {
+      font-size: 11px;
+      color: #cbd5f5;
+      opacity: 0.9;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(22, 163, 74, 0.1);
+      color: #bbf7d0;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    .network-pill {
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    .wallet-box {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .wallet-label {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .wallet-address {
+      font-size: 13px;
+      color: #e5e7eb;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease-out;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #16a34a);
+      color: #ffffff;
+      box-shadow: 0 14px 30px rgba(5, 150, 105, 0.6);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(5, 150, 105, 0.8);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      color: #e5e7eb;
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 8px 14px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .section-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .balance-tag {
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.85);
+      color: #f9fafb;
+      padding: 11px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease,
+        background 0.16s ease;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+
+    .info-row span.value {
+      color: #e5e7eb;
+    }
+
+    .sell-btn {
+      margin-top: 10px;
+    }
+
+    .footer-text {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    .error-box {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #fecaca;
+      background: rgba(127, 29, 29, 0.85);
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(248, 113, 113, 0.7);
+      max-height: 120px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .success-text {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #bbf7d0;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-
-<div class="card">
-
-    <img src="https://i.postimg.cc/4dJ4rH4H/panda-logo.png">
-
-    <h2>POT Buyback Portal</h2>
-    <div style="margin-top:-10px; opacity:0.7;">
-        Playtopia Organization Token (POT)
+  <div class="card">
+    <div class="header">
+      <div class="logo">
+        <!-- اگر خواستی لوگو رو عوض کنی، فقط همین src رو عوض کن -->
+        <img
+          src="https://i.ibb.co/QdQ5gH3/panda-avatar.png"
+          alt="POT Logo"
+        />
+      </div>
+      <div class="title-block">
+        <h1>POT Buyback Portal</h1>
+        <div class="subtitle">Sell POT directly for USDT on BSC</div>
+        <div class="sub-tagline">
+          Playtopia Organization Token (POT)
+        </div>
+      </div>
     </div>
 
-    <button id="connectBtn">Connect Wallet</button>
-
-    <div id="walletBox" style="margin-top:10px; font-size:14px; display:none;">
-        Connected: <span id="userAddress"></span>
+    <div class="status-row">
+      <div>
+        <span class="status-pill" id="status-pill">
+          <span class="status-dot"></span>
+          <span id="status-text">Disconnected</span>
+        </span>
+      </div>
+      <div class="network-pill">Network: BNB Smart Chain</div>
     </div>
 
-    <h3 style="margin-top:25px;">Amount of POT to sell</h3>
+    <div class="wallet-box">
+      <div class="wallet-label">Wallet</div>
+      <div class="wallet-address" id="wallet-address">Not connected</div>
+      <button class="btn btn-primary" id="connect-btn">
+        Connect Wallet
+      </button>
+      <button class="btn btn-secondary" id="disconnect-btn" style="display:none;">
+        Disconnect
+      </button>
+    </div>
 
-    <input id="amount" type="number" placeholder="e.g. 10000">
+    <div class="section-label-row">
+      <span>Amount of POT to sell</span>
+      <span class="balance-tag" id="balance-label">Balance: – POT</span>
+    </div>
 
-    <div class="info">Buyback Price: <span id="priceTxt">Loading...</span></div>
-    <div class="info">Estimated Receive: <span id="receiveTxt">0</span> USDT</div>
+    <div class="input-wrapper">
+      <input
+        id="amount-input"
+        type="number"
+        min="0"
+        step="0.0001"
+        placeholder="e.g. 1000"
+      />
+      <span class="input-suffix">POT</span>
+    </div>
 
-    <button id="sellBtn" disabled>Sell POT for USDT</button>
+    <div class="info-row">
+      <span>Buyback Price:</span>
+      <span class="value" id="price-label">Loading…</span>
+    </div>
 
-    <div id="errorBox" style="margin-top:15px; color:#ff6961; font-size:14px;"></div>
+    <div class="info-row">
+      <span>Estimated Receive:</span>
+      <span class="value" id="estimate-label">– USDT</span>
+    </div>
 
-</div>
+    <button class="btn btn-primary sell-btn" id="sell-btn" disabled>
+      Sell POT for USDT
+    </button>
 
-<script>
-const CONTRACT_ADDRESS = "0x9652CC7355C759DB295E8bd5A21d4D707FC07085";
+    <div class="success-text" id="success-msg" style="display:none;"></div>
+    <div class="error-box" id="error-box" style="display:none;"></div>
 
-const ABI = [
-{"inputs":[{"internalType":"address","name":"_token","type":"address"},{"internalType":"address","name":"_usdt","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
-{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-{"inputs":[],"name":"price","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sellTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
-{"inputs":[{"internalType":"uint256","name":"newPrice","type":"uint256"}],"name":"setPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},
-{"inputs":[],"name":"token","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-{"inputs":[],"name":"usdt","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
-{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"}
-];
+    <div class="footer-text">
+      Network: BNB Smart Chain (BEP-20 USDT)
+    </div>
+  </div>
 
-let provider;
-let signer;
-let contract;
+  <script>
+    // ====== ثابت‌ها ======
+    const BUYBACK_ADDRESS = "0x9652CC7355C759DB295E8bd5A21d4D707FC07085";
+    const TOKEN_ADDRESS = "0x66059443da552aAe6a032E3a84307E6BBbd3cd01";
+    const USDT_DECIMALS = 18; // USDT on BSC
+    const BSC_CHAIN_ID = 56;
 
-// -------- CONNECT WALLET --------
-document.getElementById("connectBtn").onclick = async () => {
-    try {
-        if (!window.ethereum) {
-            alert("MetaMask or Trust Wallet browser required.");
-            return;
-        }
+    // ABI قرارداد BuyBack
+    const BUYBACK_ABI = [
+      {
+        "inputs": [
+          { "internalType": "address", "name": "_token", "type": "address" },
+          { "internalType": "address", "name": "_usdt", "type": "address" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "price",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }],
+        "name": "sellTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [{ "internalType": "uint256", "name": "newPrice", "type": "uint256" }],
+        "name": "setPrice",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "token",
+        "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "usdt",
+        "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }],
+        "name": "withdrawTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }],
+        "name": "withdrawUSDT",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
 
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
+    // مینیموم ABI برای توکن POT
+    const ERC20_ABI = [
+      {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{ "name": "", "type": "uint8" }],
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [{ "name": "owner", "type": "address" }],
+        "name": "balanceOf",
+        "outputs": [{ "name": "balance", "type": "uint256" }],
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [
+          { "name": "owner", "type": "address" },
+          { "name": "spender", "type": "address" }
+        ],
+        "name": "allowance",
+        "outputs": [{ "name": "remaining", "type": "uint256" }],
+        "type": "function"
+      },
+      {
+        "constant": false,
+        "inputs": [
+          { "name": "spender", "type": "address" },
+          { "name": "value", "type": "uint256" }
+        ],
+        "name": "approve",
+        "outputs": [{ "name": "success", "type": "bool" }],
+        "type": "function"
+      }
+    ];
 
-        const address = await signer.getAddress();
-        document.getElementById("userAddress").innerText = address;
-        document.getElementById("walletBox").style.display = "block";
+    // عناصر DOM
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
+    const walletAddressEl = document.getElementById("wallet-address");
+    const statusTextEl = document.getElementById("status-text");
+    const statusPillEl = document.getElementById("status-pill");
+    const amountInput = document.getElementById("amount-input");
+    const priceLabel = document.getElementById("price-label");
+    const estimateLabel = document.getElementById("estimate-label");
+    const balanceLabel = document.getElementById("balance-label");
+    const sellBtn = document.getElementById("sell-btn");
+    const errorBox = document.getElementById("error-box");
+    const successMsg = document.getElementById("success-msg");
 
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    let web3Modal;
+    let externalProvider;
+    let provider;
+    let signer;
+    let userAddress;
+    let buybackContract;
+    let tokenContract;
+    let tokenDecimals = 18;
+    let onChainPrice; // BigNumber (USDT * 1e18 / POT)
 
-        loadPrice();
-        document.getElementById("sellBtn").disabled = false;
-
-    } catch (err) {
-        document.getElementById("errorBox").innerText = err.message;
+    function setStatus(connected) {
+      if (connected) {
+        statusTextEl.textContent = "Connected";
+        statusPillEl.style.background = "rgba(22, 163, 74, 0.12)";
+      } else {
+        statusTextEl.textContent = "Disconnected";
+        statusPillEl.style.background = "rgba(148, 163, 184, 0.15)";
+      }
     }
-};
 
-// -------- LOAD PRICE --------
-async function loadPrice() {
-    try {
-        const p = await contract["price"]();
-        document.getElementById("priceTxt").innerText = p.toString();
-    } catch (err) {
-        document.getElementById("priceTxt").innerText = "Error";
-        console.log(err);
+    function shortenAddress(addr) {
+      if (!addr) return "";
+      return addr.slice(0, 6) + "..." + addr.slice(-4);
     }
-}
 
-// -------- CALCULATE ESTIMATED RECEIVE --------
-document.getElementById("amount").oninput = () => {
-    const amt = document.getElementById("amount").value;
-    const price = document.getElementById("priceTxt").innerText;
+    function showError(msg) {
+      console.error(msg);
+      errorBox.style.display = "block";
+      errorBox.textContent = typeof msg === "string" ? msg : String(msg);
+      successMsg.style.display = "none";
+    }
 
-    if (!amt || !price || price === "Loading..." || price === "Error") {
-        document.getElementById("receiveTxt").innerText = "0";
+    function showSuccess(msg) {
+      successMsg.style.display = "block";
+      successMsg.textContent = msg;
+      errorBox.style.display = "none";
+    }
+
+    function clearMessages() {
+      errorBox.style.display = "none";
+      successMsg.style.display = "none";
+    }
+
+    function updateEstimate() {
+      if (!onChainPrice || !amountInput.value) {
+        estimateLabel.textContent = "– USDT";
         return;
+      }
+      try {
+        const amtStr = amountInput.value.trim();
+        if (!amtStr || Number(amtStr) <= 0) {
+          estimateLabel.textContent = "– USDT";
+          return;
+        }
+        const amtWei = ethers.utils.parseUnits(amtStr, tokenDecimals);
+        const payoutWei = amtWei.mul(onChainPrice).div(
+          ethers.constants.WeiPerEther
+        );
+        const payout = ethers.utils.formatUnits(payoutWei, USDT_DECIMALS);
+        estimateLabel.textContent = `${payout} USDT`;
+      } catch {
+        estimateLabel.textContent = "– USDT";
+      }
     }
 
-    const result = (amt * price) / 1e18;
-    document.getElementById("receiveTxt").innerText = result;
-};
+    async function loadPrice() {
+      try {
+        const readProvider = new ethers.providers.JsonRpcProvider(
+          "https://bsc-dataseed.binance.org/"
+        );
+        const readContract = new ethers.Contract(
+          BUYBACK_ADDRESS,
+          BUYBACK_ABI,
+          readProvider
+        );
+        const price = await readContract.price();
+        onChainPrice = price;
+        const priceHuman = ethers.utils.formatUnits(price, USDT_DECIMALS);
+        priceLabel.textContent = `${priceHuman} USDT per POT`;
+        updateEstimate();
+      } catch (e) {
+        console.error(e);
+        priceLabel.textContent = "Error loading price";
+      }
+    }
 
-// -------- SELL TOKENS --------
-document.getElementById("sellBtn").onclick = async () => {
-    try {
-        document.getElementById("errorBox").innerText = "";
+    async function refreshBalance() {
+      if (!tokenContract || !userAddress) return;
+      try {
+        const bal = await tokenContract.balanceOf(userAddress);
+        const balHuman = ethers.utils.formatUnits(bal, tokenDecimals);
+        balanceLabel.textContent = `Balance: ${balHuman} POT`;
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
-        const amount = document.getElementById("amount").value;
-        if (!amount || amount <= 0) {
-            document.getElementById("errorBox").innerText = "Enter a valid amount.";
-            return;
+    async function initWeb3Modal() {
+      const providerOptions = {
+        walletconnect: {
+          package: window.WalletConnectProvider.default,
+          options: {
+            rpc: {
+              56: "https://bsc-dataseed.binance.org/"
+            },
+            chainId: BSC_CHAIN_ID
+          }
+        }
+      };
+
+      web3Modal = new window.Web3Modal.default({
+        cacheProvider: true,
+        providerOptions,
+        theme: "dark"
+      });
+
+      if (web3Modal.cachedProvider) {
+        connectWallet().catch(() => {});
+      }
+    }
+
+    async function connectWallet() {
+      try {
+        clearMessages();
+        externalProvider = await web3Modal.connect();
+
+        externalProvider.on("accountsChanged", (accounts) => {
+          if (accounts && accounts.length) {
+            userAddress = ethers.utils.getAddress(accounts[0]);
+            walletAddressEl.textContent = shortenAddress(userAddress);
+            refreshBalance();
+          }
+        });
+
+        externalProvider.on("chainChanged", (chainIdHex) => {
+          const chainId = parseInt(chainIdHex, 16);
+          if (chainId !== BSC_CHAIN_ID) {
+            showError("Please switch network to BNB Smart Chain (56).");
+          } else {
+            clearMessages();
+          }
+        });
+
+        provider = new ethers.providers.Web3Provider(externalProvider);
+        const network = await provider.getNetwork();
+        if (network.chainId !== BSC_CHAIN_ID) {
+          showError("Please switch network to BNB Smart Chain (56) in your wallet.");
         }
 
-        const tx = await contract["sellTokens"](ethers.BigNumber.from(amount));
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        walletAddressEl.textContent = shortenAddress(userAddress);
+
+        buybackContract = new ethers.Contract(
+          BUYBACK_ADDRESS,
+          BUYBACK_ABI,
+          signer
+        );
+        tokenContract = new ethers.Contract(
+          TOKEN_ADDRESS,
+          ERC20_ABI,
+          signer
+        );
+
+        try {
+          tokenDecimals = await tokenContract.decimals();
+        } catch {
+          tokenDecimals = 18;
+        }
+
+        setStatus(true);
+        connectBtn.textContent = "Wallet Connected";
+        connectBtn.disabled = true;
+        disconnectBtn.style.display = "block";
+        sellBtn.disabled = false;
+
+        await refreshBalance();
+        updateEstimate();
+      } catch (e) {
+        console.error(e);
+        showError("Wallet connection failed or was cancelled.");
+      }
+    }
+
+    async function disconnectWallet() {
+      try {
+        if (externalProvider && externalProvider.close) {
+          await externalProvider.close();
+        }
+      } catch {}
+      await web3Modal.clearCachedProvider();
+      externalProvider = null;
+      provider = null;
+      signer = null;
+      userAddress = null;
+      buybackContract = null;
+      tokenContract = null;
+
+      setStatus(false);
+      walletAddressEl.textContent = "Not connected";
+      connectBtn.textContent = "Connect Wallet";
+      connectBtn.disabled = false;
+      disconnectBtn.style.display = "none";
+      sellBtn.disabled = true;
+      clearMessages();
+      balanceLabel.textContent = "Balance: – POT";
+    }
+
+    async function handleSell() {
+      clearMessages();
+      if (!signer || !buybackContract || !tokenContract || !userAddress) {
+        showError("Connect your wallet first.");
+        return;
+      }
+
+      const amountStr = amountInput.value.trim();
+      if (!amountStr || Number(amountStr) <= 0) {
+        showError("Enter a valid POT amount.");
+        return;
+      }
+
+      try {
+        const amountWei = ethers.utils.parseUnits(amountStr, tokenDecimals);
+
+        // ۱) چک allowance
+        const currentAllowance = await tokenContract.allowance(
+          userAddress,
+          BUYBACK_ADDRESS
+        );
+
+        if (currentAllowance.lt(amountWei)) {
+          showSuccess("Approving POT spend…");
+          const approveTx = await tokenContract.approve(
+            BUYBACK_ADDRESS,
+            amountWei
+          );
+          await approveTx.wait();
+        }
+
+        showSuccess("Sending sell transaction…");
+        const tx = await buybackContract.sellTokens(amountWei);
         await tx.wait();
 
-        alert("Sell successful!");
-
-    } catch (err) {
-        document.getElementById("errorBox").innerText = err.message;
+        showSuccess("Sell completed successfully ✅");
+        await refreshBalance();
+        updateEstimate();
+      } catch (e) {
+        console.error(e);
+        const msg =
+          e && e.data && e.data.message
+            ? e.data.message
+            : e && e.message
+            ? e.message
+            : String(e);
+        showError(msg);
+      }
     }
-};
-</script>
 
+    // رویدادها
+    connectBtn.addEventListener("click", connectWallet);
+    disconnectBtn.addEventListener("click", disconnectWallet);
+    sellBtn.addEventListener("click", handleSell);
+    amountInput.addEventListener("input", updateEstimate);
+
+    // شروع
+    (async function init() {
+      await initWeb3Modal();
+      await loadPrice();
+    })();
+  </script>
 </body>
 </html>
